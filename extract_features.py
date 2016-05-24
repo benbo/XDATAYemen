@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-from collections import defaultdict
 import itertools
 import os
 import sys
@@ -9,7 +8,6 @@ import tempfile
 from google.protobuf import text_format as proto_text
 import h5py
 import numpy as np
-from sklearn.preprocessing import normalize
 
 # Make sure that caffe is on the python path:
 CAFFE_ROOT = '/home/scratch/{}/caffe/'.format(os.environ['USER'])
@@ -132,8 +130,9 @@ def main():
 
         dset = f.create_dataset(args.out_dset, (n, dim), chunks=(1, dim))
         for i, feat in enumerate(pb.ProgressBar(max_value=n)(feats)):
-        # for i, feat in enumerate(feats):
             dset[i] = feat
+            if i % 100000 == 0:
+                f.flush()
 
 if __name__ == '__main__':
     main()

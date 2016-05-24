@@ -96,9 +96,9 @@ def main():
         raise
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('images_file')
     parser.add_argument('out_h5')
     parser.add_argument('out_dset')
-    parser.add_argument('images', nargs='+')
     parser.add_argument('--layers', '-l', nargs='+', default=['pool5'])
     parser.add_argument('--batch-size', type=int, default=500)
     g = parser.add_mutually_exclusive_group()
@@ -113,17 +113,22 @@ def main():
         if args.gpu is not None:
             caffe.set_device(args.gpu)
 
+    with open(args.images_file) as f:
+        images = f.read().splitlines()
+
     with h5py.File(args.out_h5) as f:
         if args.out_dset in f:
             parser.error(
                 '{}: {} already exists'.format(args.out_h5, args.out_dset))
 
         feats = iter(get_features(
-            args.images, args.layers, batch_size=args.batch_size))
+            images, args.layers, batch_size=args.batch_size))
+        n = len(images)
+
+        # peek at the first result, to check dimensionality
         first = next(feats)
-        feats = itertools.chain([first], feats)  # replace it
         dim = first.size
-        n = len(args.images)
+        feats = itertools.chain([first], feats)
 
         dset = f.create_dataset(args.out_dset, (n, dim), chunks=(1, dim))
         for i, feat in enumerate(pb.ProgressBar(max_value=n)(feats)):

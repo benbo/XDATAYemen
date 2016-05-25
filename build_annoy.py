@@ -3,6 +3,7 @@ import sys
 
 from annoy import AnnoyIndex
 import h5py
+import progressbar as pb
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -16,7 +17,8 @@ with h5py.File(args.filename, 'r') as f:
     X = f[args.dataset]
     idx = AnnoyIndex(X.shape[1], 'angular')
     print("Adding items...", file=sys.stderr, end='')
-    for i, v in enumerate(X):
+    idx.add_item(X.shape[0] - 1, X[-1])  # preallocate full size
+    for i, v in enumerate(pb.ProgressBar()(X[:-1])):
         idx.add_item(i, v)
     print("done.", file=sys.stderr)
 

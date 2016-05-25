@@ -7,7 +7,7 @@ import numpy as np
 
 import falconn_sims
 
-from flask import Flask, abort
+from flask import Flask, abort, request
 app = Flask(__name__)
 
 
@@ -51,7 +51,7 @@ def setup(index_filenames, index_features, tune_feats_features, **kwargs):
 
 
 @app.route('/query_filename/<filename>/<int:k>')
-def query(filename, k):
+def query_filename(filename, k):
     return json.dumps(search_filename(filename, k))
 
 

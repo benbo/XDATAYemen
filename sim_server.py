@@ -58,7 +58,7 @@ def query_filename(filename, k):
 @app.route('/query/<int:k>', methods=['POST'])
 def query(k):
     try:
-        feats = np.array(json.loads(request.form['features']))
+        feats = np.array(json.loads(request.form['features']), dtype=np.float32)
         assert feats.ndim == 1 and feats.shape[0] == dimension
         return json.dumps(search(feats, k))
     except (ValueError, KeyError, AssertionError):

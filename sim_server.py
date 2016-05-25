@@ -7,7 +7,7 @@ import numpy as np
 
 import falconn_sims
 
-from flask import Flask
+from flask import Flask, abort
 app = Flask(__name__)
 
 
@@ -37,17 +37,32 @@ def setup(index_filenames, index_features, tune_feats_features, **kwargs):
         filenames = [s.strip() for s in f]
     index_lookup = {s.split('/')[1]: i for i, s in enumerate(filenames)}
 
-    def search(filename, k):
+    def search(feats, k):
+        query = feats / np.linalg.norm(feats) - mean
+        return table.find_k_nearest_neighbors(query, k)
+
+    def search_filename(filename, k):
         i = index_lookup[filename]
         query = dataset[i] / np.linalg.norm(dataset[i]) - mean
         res = table.find_k_nearest_neighbors(query, k + 1)
         return [filenames[r] for r in res if r != i][:k]
-    return search
+
+    return dataset.shape[1], search, search_filename
 
 
-@app.route('/query/<filename>/<int:k>')
+@app.route('/query_filename/<filename>/<int:k>')
 def query(filename, k):
-    return json.dumps(search(filename, k))
+    return json.dumps(search_filename(filename, k))
+
+
+@app.route('/query/<int:k>', methods=['POST'])
+def query(k):
+    try:
+        feats = np.array(json.loads(request.form['features']))
+        assert feats.ndim == 1 and feats.shape[0] == dimension
+        return json.dumps(search(feats, k))
+    except (ValueError, KeyError, AssertionError):
+        return abort(400)
 
 
 if __name__ == '__main__':
@@ -61,7 +76,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print("Building indices, will take a while...", file=sys.stderr)
-    search = setup(
+    dimension, search, search_filename = setup(
         args.index_filenames, args.index_features, args.tune_feats_features)
     print('done!', file=sys.stderr)
 

@@ -1,0 +1,107 @@
+<html>
+<body>
+  <div id="wrapper">
+    <img src="__IMAGE_PATH_HERE__" id="imgid" />
+    <br />
+    <input type="text" name="regcoords" id="regcoords" size=128 />
+    <div id="coords">Coords</div>
+  </div>
+
+    <script type="text/javascript">
+var elmid = 'imgid';
+
+var x, y = 0;       // variables that will contain the coordinates
+var base_x = 0, base_y = 0;
+var x_arr = new Array();
+var y_arr = new Array();
+
+// Get X, Y coords, and displays Mouse coordinates
+function getCoords(e) {
+
+  // if IE
+  if(navigator.appVersion.indexOf("MSIE") != -1) {
+    // in IE scrolling page affects mouse coordinates into an element
+    // This gets the page element that will be used to add scrolling value to correct mouse coords
+    var standardBody = (document.compatMode == 'CSS1Compat') ? document.documentElement : document.body;
+
+    x = event.clientX + standardBody.scrollLeft;
+    y = event.clientY + standardBody.scrollTop;
+  }
+  else {
+    x = e.pageX;
+    y = e.pageY;
+  }
+
+  var img_pos = this.getBoundingClientRect();
+  x = x - parseInt(img_pos.left);
+  y = y - parseInt(img_pos.top);
+
+  // displays x and y coords in the #coords element
+  document.getElementById('coords').innerHTML = 'X= '+ x+ ' ,Y= ' +y;
+}
+
+// http://stackoverflow.com/a/3946808/344821
+function createLineElement(x, y, length, angle) {
+  var line = document.createElement("div");
+  var styles = 'border: 1px solid cyan; '
+  + 'width: ' + length + 'px; '
+  + 'height: 0px; '
+  + '-moz-transform: rotate(' + angle + 'rad); '
+  + '-webkit-transform: rotate(' + angle + 'rad); '
+  + '-o-transform: rotate(' + angle + 'rad); '  
+  + '-ms-transform: rotate(' + angle + 'rad); '  
+  + 'position: fixed; '
+  + 'top: ' + y + 'px; '
+  + 'left: ' + x + 'px; ';
+  line.setAttribute('style', styles);  
+  return line;
+}
+
+function createLine(x1, y1, x2, y2) {
+  var a = x1 - x2,
+  b = y1 - y2,
+  c = Math.sqrt(a * a + b * b);
+
+  var sx = (x1 + x2) / 2,
+  sy = (y1 + y2) / 2;
+
+  var x = sx - c / 2,
+  y = sy;
+
+  var alpha = Math.PI - Math.atan2(-b, a);
+
+  return createLineElement(x, y, c, alpha);
+}
+
+
+// register onmousemove and onclick
+if (document.getElementById(elmid)) {
+    // calls the getCoords() function when mousemove
+    document.getElementById(elmid).onmousemove = getCoords;
+
+    // execute a function when click
+    var last_x = -10, last_y = -10;
+    document.getElementById(elmid).onclick = function() {
+      x_arr.push(x);
+      y_arr.push(y);
+      var myString = "";
+      for (var j=0; j<x_arr.length; j++) {
+        myString += "[" + x_arr[j] + ","+y_arr[j]+"],";
+      }
+      document.getElementById('regcoords').value = myString;
+
+      var img_pos = document.getElementById(elmid).getBoundingClientRect();
+      var wrapper_pos = document.getElementById(elmid).getBoundingClientRect();
+      // var line = createLine(img_pos.left, 0, img_pos.left, img_pos.top);
+      var line = createLine(
+        (last_x == -10 ? x : last_x) + img_pos.left,
+        (last_y == -10 ? y : last_y) + img_pos.top,
+        x + img_pos.left, y + img_pos.top);
+      last_x = x;
+      last_y = y;
+      document.getElementById('wrapper').appendChild(line);
+    };
+  }
+</script>
+</body>
+</html>

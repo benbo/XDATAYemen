@@ -26,12 +26,14 @@ def _mmap_h5(path, h5path):
     return np.memmap(path, mode='r', shape=shape, offset=offset, dtype=dtype)
 
 
-def setup(index_filenames, index_features, tune_feats_features, **kwargs):
+def setup(index_filenames, index_features, tune_feats_features,
+          target_acc=.9, **kwargs):
     dataset = _mmap_h5(index_features, 'feats')
     tune_queries = _mmap_h5(tune_feats_features, 'feats')
 
     table, mean = falconn_sims.make_tables(dataset, **kwargs)
-    falconn_sims.tune_num_probes(table, mean, dataset, tune_queries)
+    falconn_sims.tune_num_probes(
+            table, mean, dataset, tune_queries, target_acc=target_acc)
 
     with open(index_filenames) as f:
         filenames = [s.strip() for s in f]
@@ -58,7 +60,7 @@ def query_filename(filename, k):
 @app.route('/query/<int:k>', methods=['POST'])
 def query(k):
     try:
-        feats = np.array(json.loads(request.form['features']))
+        feats = np.array(json.loads(request.form['features']), dtype=np.float32)
         assert feats.ndim == 1 and feats.shape[0] == dimension
         return json.dumps(search(feats, k))
     except (ValueError, KeyError, AssertionError):
@@ -71,13 +73,16 @@ if __name__ == '__main__':
     parser.add_argument('index_filenames')
     parser.add_argument('index_features')
     parser.add_argument('tune_feats_features')
+    parser.add_argument('--target-acc', type=float, default=.9)
+    parser.add_argument('--already-normed', action='store_true', default=False)
     parser.add_argument('--host')
-    parser.add_argument('--port')
+    parser.add_argument('--port', type=int)
     args = parser.parse_args()
 
     print("Building indices, will take a while...", file=sys.stderr)
     dimension, search, search_filename = setup(
-        args.index_filenames, args.index_features, args.tune_feats_features)
+        args.index_filenames, args.index_features, args.tune_feats_features,
+        target_acc=args.target_acc, already_normed=args.already_normed)
     print('done!', file=sys.stderr)
 
     app.run(host=args.host, port=args.port, debug=True)

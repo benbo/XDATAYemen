@@ -6,13 +6,17 @@ import falconn
 import numpy as np
 
 def make_tables(dataset, num_queries=1000, num_tables=50, copy=True,
-                seed=None, num_threads=0, verbose=True):
+                seed=None, num_threads=0, verbose=True, already_normed=False):
     p = partial(print, file=sys.stderr) if verbose else lambda *a, **kw: None
-    norms = np.linalg.norm(dataset, axis=1)
-    if copy:
-        dataset = dataset / norms[:, np.newaxis]
+    if already_normed:
+        if copy:
+            dataset = dataset.copy()
     else:
-        dataset /= norms[:, np.newaxis]
+        norms = np.linalg.norm(dataset, axis=1)
+        if copy:
+            dataset = dataset / norms[:, np.newaxis]
+        else:
+            dataset /= norms[:, np.newaxis]
 
     normed_mean = dataset.mean(axis=0)
     dataset -= normed_mean
@@ -37,7 +41,8 @@ def make_tables(dataset, num_queries=1000, num_tables=50, copy=True,
     return table, normed_mean
 
 
-def tune_num_probes(table, mean, dataset, queries, answers=None, verbose=True):
+def tune_num_probes(table, mean, dataset, queries, answers=None,
+                    target_acc=.9, verbose=True):
     p = partial(print, file=sys.stderr) if verbose else lambda *a, **kw: None
     
     queries = queries / np.linalg.norm(queries, axis=1)[:, np.newaxis]
@@ -61,7 +66,7 @@ def tune_num_probes(table, mean, dataset, queries, answers=None, verbose=True):
     while True:
         acc = eval_num_probes(num_probes)
         p('{} -> {}'.format(num_probes, acc))
-        if acc >= .9:
+        if acc >= target_acc:
             break
         num_probes *= 2
         stepped = True
@@ -73,7 +78,7 @@ def tune_num_probes(table, mean, dataset, queries, answers=None, verbose=True):
             num_probes = (left + right) // 2
             acc = eval_num_probes(num_probes)
             p('{} -> {}'.format(num_probes, acc))
-            if acc >= .9:
+            if acc >= target_acc:
                 right = num_probes
             else:
                 left = num_probes

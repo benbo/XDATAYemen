@@ -33,7 +33,6 @@ def load_net(prototxt=CAFFENET_PROTO, model=CAFFENET_MODEL, layers=['pool5'],
 
     # assume that everything after the last layer is garbage
     last_layer = max(i for i, l in enumerate(param.layer) if l.name in layers)
-    out_size = sum
     del param.layer[last_layer + 1:]
 
     with tempfile.NamedTemporaryFile() as f:
@@ -68,9 +67,11 @@ def group(things, batch_size):
     if out:
         yield out
 
-
-def get_features(images, layers=['pool5'], batch_size=100, **kwargs):
-    net, transformer = load_net(layers=layers, batch_size=batch_size, **kwargs)
+def get_features(images, layers=['pool5'], batch_size=100,
+                 net=None, transformer=None, **kwargs):
+    if net is None or transformer is None:
+        net, transformer = load_net(
+                layers=layers, batch_size=batch_size, **kwargs)
     image_stream = preprocess_images(images, transformer)
     for batch in group(image_stream, batch_size):
         batch = np.asarray(batch)

@@ -49,8 +49,8 @@ def generate_composites(src, backgrounds, poly,
 
         # dst image needs to be big enough for object
         scalefactor = np.max((y_len / yd, x_len / xd, vscale))
-        dst_r = cv2.resize(dst, dsize=(int(ceil(scalefactor * xd)),
-                                       int(ceil(scalefactor * yd))))
+        dst_r = cv2.resize(dst, dsize=(int(np.ceil(scalefactor * xd)),
+                                       int(np.ceil(scalefactor * yd))))
         yd, xd = dst_r.shape[:2]  
         
         ### randomize location

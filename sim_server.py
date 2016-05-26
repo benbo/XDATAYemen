@@ -41,7 +41,8 @@ def setup(index_filenames, index_features, tune_feats_features,
 
     def search(feats, k):
         query = feats / np.linalg.norm(feats) - mean
-        return table.find_k_nearest_neighbors(query, k)
+        res = table.find_k_nearest_neighbors(query, k)
+        return [filenames[r] for r in res]
 
     def search_filename(filename, k):
         i = index_lookup[filename]
